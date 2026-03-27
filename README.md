@@ -4,8 +4,6 @@
 
 # spank
 
-**English** | [简体中文][readme-zh-link]
-
 Slap your MacBook, it yells back.
 
 > "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
@@ -14,61 +12,58 @@ Slap your MacBook, it yells back.
 
 > "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
 
-Uses the Apple Silicon accelerometer (Bosch BMI286 IMU via IOKit HID) to detect physical hits on your laptop and plays audio responses. Single binary, no dependencies.
+**Exclusive for macOS:** `spank` uses securely isolated AVFoundation microphone hooks to listen for the structural "thud" that travels through the metal chassis when you slap your laptop. Single binary, no dependencies, no `sudo` required.
 
 ## Requirements
 
-- macOS on Apple Silicon (any M-series chip M2 or greater, or the M1 Pro SKU specifically, no other M1/A-series chips!)
-- `sudo` (for IOKit HID accelerometer access)
-- Go 1.26+ (if building from source)
+- macOS (Intel or Apple Silicon)
+- A built-in microphone attached to the chassis
+- Go 1.26+ and Swift (`swiftc`) to build from source
+
+## How it works
+
+Since modern macOS versions explicitly block root-level Terminal access to raw IMU sensors and accelerometers, `spank` executes a lightweight native Swift script (`mic_sensor`) in the background. 
+
+1. Reads raw volume buffers directly from the macOS audio engine.
+2. Isolates instantaneous structural volume spikes ("thuds") from ambient noise.
+3. When a significant impact is detected, it plays a randomized or escalating audio response.
 
 ## Install
 
-Download from the [latest release](https://github.com/taigrr/spank/releases/latest).
-
-Or build from source:
+Download or clone the repository, and build the binaries:
 
 ```bash
-go install github.com/taigrr/spank@latest
-```
+# Build the native MacOS microphone bridge
+swiftc mic_sensor.swift -o mic_sensor
 
-> **Note:** `go install` places the binary in `$GOBIN` (if set) or `$(go env GOPATH)/bin` (which defaults to `~/go/bin`). Copy it to a system path so `sudo spank` works. For example, with the default Go settings:
->
-> ```bash
-> sudo cp "$(go env GOPATH)/bin/spank" /usr/local/bin/spank
-> ```
+# Build the Go application
+go build -o spank .
+```
 
 ## Usage
 
+*Note: The first time you run this, macOS will ask for permission for your Terminal to access the Microphone.*
+
 ```bash
 # Normal mode — says "ow!" when slapped
-sudo spank
+./spank
 
 # Sexy mode — escalating responses based on slap frequency
-sudo spank --sexy
+./spank --sexy
 
 # Halo mode — plays Halo death sounds when slapped
-sudo spank --halo
-
-# Fast mode — faster polling and shorter cooldown
-sudo spank --fast
-sudo spank --sexy --fast
+./spank --halo
 
 # Custom mode — plays your own MP3 files from a directory
-sudo spank --custom /path/to/mp3s
+./spank --custom /path/to/mp3s
 
 # Adjust sensitivity with amplitude threshold (lower = more sensitive)
-sudo spank --min-amplitude 0.1   # more sensitive
-sudo spank --min-amplitude 0.25  # less sensitive
-sudo spank --sexy --min-amplitude 0.2
+./spank --min-amplitude 0.1   # extremely sensitive (hears typing)
+./spank --min-amplitude 0.25  # default balanced sensitivity
+./spank --sexy --min-amplitude 0.4 # requires a very hard slap
 
 # Set cooldown period in millisecond (default: 750)
-sudo spank --cooldown 600
-
-# Set playback speed multiplier (default: 1.0)
-sudo spank --speed 0.7   # slower and deeper
-sudo spank --speed 1.5   # faster
-sudo spank --sexy --speed 0.6
+./spank --cooldown 600
 ```
 
 ### Modes
@@ -79,159 +74,6 @@ sudo spank --sexy --speed 0.6
 
 **Halo mode** (`--halo`): Randomly plays from death sound effects from the Halo video game series when a slap is detected.
 
-**Custom mode** (`--custom`): Randomly plays MP3 files from a custom directory you specify.
-
-### Detection tuning
-
-Use `--fast` for a more responsive profile with faster polling (4ms vs 10ms), shorter cooldown (350ms vs 750ms), higher sensitivity (0.18 vs 0.05 threshold), and larger sample batch (320 vs 200).
-
-You can still override individual values with `--min-amplitude` and `--cooldown` when needed.
-
-### Sensitivity
-
-Control detection sensitivity with `--min-amplitude` (default: `0.05`):
-
-- Lower values (e.g., 0.05-0.10): Very sensitive, detects light taps
-- Medium values (e.g., 0.15-0.30): Balanced sensitivity
-- Higher values (e.g., 0.30-0.50): Only strong impacts trigger sounds
-
-The value represents the minimum acceleration amplitude (in g-force) required to trigger a sound.
-
-## Running as a Service
-
-To have spank start automatically at boot, create a launchd plist. Pick your mode:
-
-<details>
-<summary>Pain mode (default)</summary>
-
-```bash
-sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.taigrr.spank</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/spank</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/spank.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/spank.err</string>
-</dict>
-</plist>
-EOF
-```
-
-</details>
-
-<details>
-<summary>Sexy mode</summary>
-
-```bash
-sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.taigrr.spank</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/spank</string>
-        <string>--sexy</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/spank.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/spank.err</string>
-</dict>
-</plist>
-EOF
-```
-
-</details>
-
-<details>
-<summary>Halo mode</summary>
-
-```bash
-sudo tee /Library/LaunchDaemons/com.taigrr.spank.plist > /dev/null << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.taigrr.spank</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/spank</string>
-        <string>--halo</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/spank.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/spank.err</string>
-</dict>
-</plist>
-EOF
-```
-
-</details>
-
-> **Note:** Update the path to `spank` if you installed it elsewhere (e.g. `~/go/bin/spank`).
-
-Load and start the service:
-
-```bash
-sudo launchctl load /Library/LaunchDaemons/com.taigrr.spank.plist
-```
-
-Since the plist lives in `/Library/LaunchDaemons` and no `UserName` key is set, launchd runs it as root — no `sudo` needed.
-
-To stop or unload:
-
-```bash
-sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
-```
-
-## How it works
-
-1. Reads raw accelerometer data directly via IOKit HID (Apple SPU sensor)
-2. Runs vibration detection (STA/LTA, CUSUM, kurtosis, peak/MAD)
-3. When a significant impact is detected, plays an embedded MP3 response
-4. **Optional volume scaling** (`--volume-scaling`) — light taps play quietly, hard slaps play at full volume
-5. **Optional speed control** (`--speed`) — adjusts playback speed and pitch (0.5 = half speed, 2.0 = double speed)
-6. 750ms cooldown between responses to prevent rapid-fire, adjustable with `--cooldown`
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=taigrr/spank&type=date&legend=top-left)](https://www.star-history.com/#taigrr/spank&type=date&legend=top-left)
-
-## Credits
-
-Sensor reading and vibration detection ported from [olvvier/apple-silicon-accelerometer](https://github.com/olvvier/apple-silicon-accelerometer).
-
 ## License
 
 MIT
-
-<!-- Links -->
-[readme-zh-link]: ./README-zh.md
