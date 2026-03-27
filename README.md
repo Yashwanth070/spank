@@ -8,11 +8,6 @@
 
 Slap your MacBook, it yells back.
 
-> "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
-
-> "I just ran sexy mode with my wife sitting next to me...We died laughing" — [@duncanthedev](https://x.com/duncanthedev)
-
-> "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
 
 Uses the Apple Silicon accelerometer (Bosch BMI286 IMU via IOKit HID) to detect physical hits on your laptop and plays audio responses. Single binary, no dependencies.
 
@@ -221,9 +216,7 @@ sudo launchctl unload /Library/LaunchDaemons/com.taigrr.spank.plist
 5. **Optional speed control** (`--speed`) — adjusts playback speed and pitch (0.5 = half speed, 2.0 = double speed)
 6. 750ms cooldown between responses to prevent rapid-fire, adjustable with `--cooldown`
 
-## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=taigrr/spank&type=date&legend=top-left)](https://www.star-history.com/#taigrr/spank&type=date&legend=top-left)
 
 ## Credits
 
