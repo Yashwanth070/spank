@@ -6,11 +6,6 @@
 
 Slap your MacBook, it yells back.
 
-> "this is the most amazing thing i've ever seen" — [@kenwheeler](https://x.com/kenwheeler)
-
-> "I just ran sexy mode with my wife sitting next to me...We died laughing" — [@duncanthedev](https://x.com/duncanthedev)
-
-> "peak engineering" — [@tylertaewook](https://x.com/tylertaewook)
 
 **Exclusive for macOS:** `spank` uses securely isolated AVFoundation microphone hooks to listen for the structural "thud" that travels through the metal chassis when you slap your laptop. Single binary, no dependencies, no `sudo` required.
 
