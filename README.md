@@ -4,7 +4,7 @@
 
 # spank
 
-**English** | [简体中文][readme-zh-link]
+**English** 
 
 Slap your MacBook, it yells back.
 
